@@ -1,5 +1,5 @@
 # Global configuration
-USETLS: true  # Set to false to disable SSL/TLS verification for development environments
+USETLS: false
 USER_AGENT: "WSO2-AI-Gateway-Demo/1.0"  # Custom User-Agent for all LLM API calls
 
 providers:
