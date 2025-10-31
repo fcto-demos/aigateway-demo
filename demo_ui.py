@@ -17,15 +17,24 @@ from localization import t, set_lang, get_lang
 # Script to call OpenAI via WSO2
 # ------------------------------
 
+# Page config (favicon/logo WSO2)
+_icon_path_rel = os.path.join(".streamlit", "wso2-favicon.png")
+_icon_path_abs = os.path.abspath(_icon_path_rel)
+_icon_for_streamlit = _icon_path_abs if os.path.exists(_icon_path_abs) else "🧡"
+
+st.set_page_config(
+    page_title="WSO2 AI Gateway",
+    page_icon=_icon_for_streamlit,
+    layout="wide"
+)
+
 # Load environment variables from .env file
 load_dotenv()
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
-# Load prompts configuration
-with open("prompts.yaml", "r") as f:
-    prompts_config = yaml.safe_load(f)
+# Prompts se cargarán tras seleccionar el idioma
 
 # Load applications configuration
 with open("applications.yaml", "r") as f:
@@ -55,6 +64,12 @@ def sanitize_headers_for_logging(headers):
         if len(auth_parts) > 1:
             safe_headers['Authorization'] = f"{auth_parts[0]} {mask_sensitive_data(auth_parts[1])}"
     return safe_headers
+
+def clear_last_response():
+    """Clear any previously displayed response when selections change"""
+    keys_to_delete = [k for k in st.session_state.keys() if k.startswith("last_response_")]
+    for k in keys_to_delete:
+        del st.session_state[k]
 
 def count_tokens(text, model_name="gpt-4"):
     """Count tokens in text using OpenAI's tiktoken library"""
@@ -227,16 +242,27 @@ if not application_keys:
 # Language selector (with fallback)
 # ------------------------------
 if hasattr(st, 'sidebar'):
-    lang = st.sidebar.selectbox("🌐 Language / Idioma", ["en", "es"], format_func=lambda l: {"en": "English", "es": "Español"}[l])
+    lang = st.sidebar.selectbox("🌐 Language / Idioma", ["en", "es"], format_func=lambda l: {"en": "English", "es": "Español"}[l], key="lang_select", on_change=clear_last_response)
     selected_app = st.sidebar.selectbox(
         t('select_application'),
         application_keys,
-        format_func=lambda app_key: applications_config["applications"][app_key].get("description", applications_config["applications"][app_key]["name"])
+        format_func=lambda app_key: applications_config["applications"][app_key].get("description", applications_config["applications"][app_key]["name"]),
+        key="app_select",
+        on_change=clear_last_response
     )
 else:
     lang = 'en'
     selected_app = application_keys[0] if application_keys else None
 set_lang(lang)
+
+# Load prompts configuration según idioma (con fallback)
+prompts_file = "prompts_es.yaml" if lang == "es" and os.path.exists("prompts_es.yaml") else "prompts.yaml"
+try:
+    with open(prompts_file, "r") as f:
+        prompts_config = yaml.safe_load(f)
+except Exception:
+    st.error("Error loading prompts configuration file")
+    st.stop()
 
 # Get selected application configuration
 if not selected_app:
@@ -558,7 +584,9 @@ if available_provider_keys:
         t('select_provider'),
         available_provider_keys,
         index=0,
-        format_func=lambda provider_key: config["providers"][provider_key].get("DESCRIPTION", provider_key)
+        format_func=lambda provider_key: config["providers"][provider_key].get("DESCRIPTION", provider_key),
+        key="provider_select",
+        on_change=clear_last_response
     )
 else:
     st.error("No providers available for this application")
@@ -576,7 +604,7 @@ model = provider_config.get("MODEL", "")
 
 # Prompt selection dropdown
 prompt_options = [prompt['name'] for prompt in prompts_config['prompts']]
-selected_prompt = st.selectbox(t('select_prompt'), prompt_options, index=0)
+selected_prompt = st.selectbox(t('select_prompt'), prompt_options, index=0, key="prompt_select", on_change=clear_last_response)
 
 # Get the text for the selected prompt
 selected_prompt_text = ""
