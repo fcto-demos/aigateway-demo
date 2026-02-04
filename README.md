@@ -395,7 +395,8 @@ Here are all the UI translation keys that must be provided for each language:
 | `app_provider_success` | App-provider success counter | "Successful calls from {app} to {provider}: {count}" |
 | `app_provider_error` | App-provider error counter | "Failed calls from {app} to {provider}: {count}" |
 | `select_and_ask` | Initial instruction | "Select the provider and ask your question." |
-| `missing_fields` | Config error message | "Missing the following fields in provider config: {fields}" |
+| `missing_provider_fields` | Config error message | "Missing the following fields in provider config: {fields}" |
+| `missing_app_fields` | Config error message | "Missing the following fields in application config: {fields}" |
 | `no_access_token` | OAuth error | "Could not obtain access token." |
 | `token_error` | Token error with status | "Error obtaining token. Status: {status}" |
 | `unknown_error` | Generic error | "Unknown error." |
