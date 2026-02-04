@@ -133,15 +133,20 @@ for provider_name in config["providers"]:
     env_config = load_provider_env_config(provider_name)
     config["providers"][provider_name].update(env_config)
 
-# Filter only enabled providers
-enabled_providers = {name: config for name, config in config["providers"].items()
-                    if config.get("ENABLED", True)}
-config["providers"] = enabled_providers
-
 # Filter only enabled applications
 enabled_applications = {key: app_config for key, app_config in applications_config["applications"].items()
                        if app_config.get("enabled", True)}
 applications_config["applications"] = enabled_applications
+
+# Collect all providers used by enabled apps
+used_providers = set()
+for app in enabled_applications.values():
+    used_providers.update(app.get("providers", []))
+
+# Filter only enabled providers and those used by enabled applications
+enabled_providers = {name: config for name, config in config["providers"].items()
+                    if config.get("ENABLED", True) and name and name in used_providers}
+config["providers"] = enabled_providers
 
 # OAuth token cache - stores tokens per OAuth provider
 oauth_token_cache = {}
@@ -217,14 +222,14 @@ def acquire_oauth_token(application_config):
         print(f"[ERROR] Token request failed with status: {token_response.status_code}")
         raise Exception(t('token_error', status=token_response.status_code))
 
-def validate_provider_config(provider_config, required_fields):
+def validate_provider_config(provider_name, provider_config, required_fields):
     missing = [field for field in required_fields if field not in provider_config or provider_config[field] is None]
     if missing:
-        st.error(t('missing_fields', fields=", ".join(missing)))
+        st.error(t('missing_provider_fields', fields=", ".join(missing), provider=provider_name))
         st.error(t('env_config_help'))
         st.stop()
 
-def validate_application_config(application_config, required_fields):
+def validate_application_config(application_name, application_config, required_fields):
     missing = [field for field in required_fields if field not in application_config or application_config[field] is None]
     if missing:
         st.error(t('missing_fields', fields=", ".join(missing)))
@@ -279,7 +284,7 @@ app_oauth_config = load_application_env_config(selected_app)
 
 # Validate application OAuth configuration
 app_required_fields = ["TOKEN_URL", "CONSUMER_KEY", "CONSUMER_SECRET"]
-validate_application_config(app_oauth_config, app_required_fields)
+validate_application_config(selected_app, app_oauth_config, app_required_fields)
 
 # Filter providers available to this application
 available_provider_keys = []
@@ -295,7 +300,7 @@ if not available_provider_keys:
 # Validate provider configurations
 provider_required_fields = ["CHAT_COMPLETIONS_URL"]
 for prov in config["providers"]:
-    validate_provider_config(config["providers"][prov], provider_required_fields)
+    validate_provider_config(prov, config["providers"][prov], provider_required_fields)
 
 # Check if we have applications configured
 if not applications_config["applications"]:

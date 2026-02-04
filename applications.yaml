@@ -10,7 +10,7 @@ applications:
     # List of providers this application can access
     providers: ["MISTRAL", "OPENLLM"]
     # OAuth credentials are loaded from environment variables:
-    # DEFAULT_CONSUMER_KEY, DEFAULT_CONSUMER_SECRET, DEFAULT_TOKEN_URL
+    # EUTEAM_CONSUMER_KEY, EUTEAM_CONSUMER_SECRET, EUTEAM_TOKEN_URL
     # If not found, falls back to WSO2_CONSUMER_KEY, WSO2_CONSUMER_SECRET, WSO2_TOKEN_URL
 
   euteam_limited:
@@ -18,15 +18,18 @@ applications:
     description: "Rate Limiting Demo"
     enabled: true
     providers: ["MISTRAL2"]
+    # OAuth credentials are loaded from environment variables:
+    # EUTEAM_LIMITED_CONSUMER_KEY, EUTEAM_LIMITED_CONSUMER_SECRET, EUTEAM_LIMITED_TOKEN_URL
+    # If not found, falls back to WSO2_CONSUMER_KEY, WSO2_CONSUMER_SECRET, WSO2_TOKEN_URL
 
-  default:
+  default_app:
     name: "Default Application"
     description: "Dev: All LLMs"
     enabled: true
     # List of providers this application can access
     providers: ["MISTRAL", "OPENLLM"]
     # OAuth credentials are loaded from environment variables:
-    # DEFAULT_CONSUMER_KEY, DEFAULT_CONSUMER_SECRET, DEFAULT_TOKEN_URL
+    # DEFAULT_APP_CONSUMER_KEY, DEFAULT_APP_CONSUMER_SECRET, DEFAULT_APP_TOKEN_URL
     # If not found, falls back to WSO2_CONSUMER_KEY, WSO2_CONSUMER_SECRET, WSO2_TOKEN_URL
 
     
