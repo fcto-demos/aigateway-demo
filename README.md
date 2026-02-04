@@ -81,24 +81,26 @@ The application uses three main configuration files:
 Sensitive credentials are stored in a `.env` file that is not tracked by git. Supports both shared and application-specific credentials:
 
 ```env
-# Shared WSO2 Gateway Credentials (fallback for all applications)
+# Shared WSO2 Gateway Credentials (Required - fallback for all applications)
 WSO2_CONSUMER_KEY=your_shared_consumer_key
 WSO2_CONSUMER_SECRET=your_shared_consumer_secret
 WSO2_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
 
-# Application-specific OAuth Credentials (optional)
-DEFAULT_CONSUMER_KEY=your_default_app_consumer_key
-DEFAULT_CONSUMER_SECRET=your_default_app_consumer_secret
-DEFAULT_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
-
-STREAMLIT_CONSUMER_KEY=your_streamlit_app_consumer_key
-STREAMLIT_CONSUMER_SECRET=your_streamlit_app_consumer_secret
-STREAMLIT_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
-
-# Provider-specific Chat Completions URLs (from subscribed APIs in WSO2)
+# Provider-specific Chat Completions URLs (Required - from subscribed APIs in WSO2)
 OPENLLM_CHAT_COMPLETIONS_URL=https://your-wso2-server:8243/openaiapi/v1/chat/completions
 MISTRAL_CHAT_COMPLETIONS_URL=https://your-wso2-server:8243/mistralapi/v1/chat/completions
 ANTHROPIC_CHAT_COMPLETIONS_URL=https://your-wso2-server:8243/anthropicapi/v1/messages
+
+# Application-specific OAuth Credentials (Optional)
+# Example for a "mobile" application in applications.yaml:
+MOBILE_CONSUMER_KEY=your_mobile_app_consumer_key
+MOBILE_CONSUMER_SECRET=your_mobile_app_consumer_secret
+MOBILE_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
+
+# Example for a "webapp" application in applications.yaml:
+WEBAPP_CONSUMER_KEY=your_webapp_consumer_key
+WEBAPP_CONSUMER_SECRET=your_webapp_consumer_secret
+WEBAPP_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
 ```
 
 **Credential Hierarchy:**
@@ -188,39 +190,89 @@ prompts:
 5. **Update application access** in `applications.yaml` to grant provider access to specific applications
 6. No code changes are needed: the app automatically detects the defined providers
 
-Example for adding a new "CLAUDE" provider:
-- Subscribe to Claude API in WSO2 Developer Portal
-- Add `CLAUDE_CHAT_COMPLETIONS_URL=https://your-wso2-server:8243/claudeapi/v1/messages` to `.env`
-- Add the following to `config.yaml`:
-  ```yaml
-  CLAUDE:
-    MODEL: "claude-3-sonnet"
-    DESCRIPTION: "Claude 3 Sonnet - Balanced performance and capability"
-    ENABLED: true
-  ```
-- Update `applications.yaml` to grant access:
-  ```yaml
-  default:
-    providers: ["MISTRAL", "ANTHROPIC", "CLAUDE"]
-  ```
+Example for adding a new "GEMINI" provider:
+1. Subscribe to Gemini API in WSO2 Developer Portal
+2. Add the endpoint URL to `.env`:
+   ```env
+   GEMINI_CHAT_COMPLETIONS_URL=https://your-wso2-server:8243/geminiapi/v1/chat/completions
+   ```
+3. Add the provider to `config.yaml`:
+   ```yaml
+   GEMINI:
+     MODEL: "gemini-pro"
+     DESCRIPTION: "Google Gemini Pro - Multimodal AI model"
+     ENABLED: true
+   ```
+4. Update your application in `applications.yaml` to grant access:
+   ```yaml
+   mobile:
+     name: "Mobile App"
+     description: "Mobile application"
+     enabled: true
+     providers: ["OPENLLM", "MISTRAL", "GEMINI"]  # Added GEMINI
+   ```
 
 ### Adding a New Application
-1. **Create a new WSO2 application** in the Developer Portal
-2. **Generate OAuth credentials** for the new application
-3. **Add application-specific credentials** to `.env` (optional, will fallback to shared credentials):
-   ```env
-   NEWAPP_CONSUMER_KEY=new_app_consumer_key
-   NEWAPP_CONSUMER_SECRET=new_app_consumer_secret
-   NEWAPP_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
-   ```
-4. **Add application configuration** to `applications.yaml`:
-   ```yaml
-   newapp:
-     name: "New Application"
-     description: "Description of the new application"
-     enabled: true
-     providers: ["OPENLLM", "MISTRAL"]  # Choose which providers this app can access
-   ```
+
+Follow these steps to add a new application to the demo:
+
+#### Step 1: Create WSO2 Application in Developer Portal
+1. Log in to your WSO2 Developer Portal
+2. Navigate to "Applications" and click "Add Application"
+3. Fill in the application details:
+   - **Name**: e.g., "Mobile App Client"
+   - **Per Token Quota**: Set according to your usage needs
+4. Click "Add" to create the application
+
+#### Step 2: Subscribe to LLM Provider APIs
+1. Go to your new application in the Developer Portal
+2. Subscribe to the LLM APIs you want this application to access:
+   - For OpenAI access: Subscribe to the OpenAI API
+   - For Mistral access: Subscribe to the Mistral API
+   - For Anthropic access: Subscribe to the Anthropic API
+3. This step is **required** - the application cannot access providers it hasn't subscribed to
+
+#### Step 3: Generate OAuth Credentials
+1. In your application, go to the "Production Keys" tab
+2. Click "Generate Keys" to create OAuth2 credentials
+3. Copy the **Consumer Key** and **Consumer Secret**
+4. Note the **Token URL** (typically `https://your-wso2-server:9443/oauth2/token`)
+
+#### Step 4: Add Configuration to applications.yaml
+Add your application to `applications.yaml` using a **lowercase key**:
+
+```yaml
+mobile:  # Application key (lowercase)
+  name: "Mobile App"
+  description: "Mobile application client"
+  enabled: true
+  providers: ["OPENLLM", "MISTRAL"]  # Must match providers in config.yaml
+```
+
+**Note**: Choose a simple, lowercase key (e.g., `mobile`, `webapp`, `analytics`) that describes your application.
+
+#### Step 5: Add OAuth Credentials to .env
+If you want application-specific credentials (recommended for production), add them to `.env` using the **UPPERCASE** version of your application key:
+
+```env
+# For application key "mobile" in applications.yaml
+MOBILE_CONSUMER_KEY=your_mobile_app_consumer_key
+MOBILE_CONSUMER_SECRET=your_mobile_app_consumer_secret
+MOBILE_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
+```
+
+**Key Matching Rule**:
+- `applications.yaml` uses lowercase: `mobile`
+- `.env` uses uppercase: `MOBILE_CONSUMER_KEY`
+
+If you skip this step, the application will use the shared `WSO2_CONSUMER_KEY` and `WSO2_CONSUMER_SECRET` credentials.
+
+#### Step 6: Restart the Application
+```bash
+streamlit run demo_ui.py
+```
+
+Your new application will appear in the application selector dropdown.
 
 ### Adding Predefined Prompts
 Add new entries to `prompts.yaml`:
