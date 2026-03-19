@@ -247,16 +247,26 @@ if not application_keys:
 # ------------------------------
 # Language selector (with fallback)
 # ------------------------------
+_lang_cfg = config.get("languages", {})
+_all_langs = available_languages()
+_configured_langs = _lang_cfg.get("available", list(_all_langs.keys()))
+_missing_langs = [k for k in _configured_langs if k not in _all_langs]
+if _missing_langs:
+    print(f"[WARNING] Language(s) listed in config.yaml but locale pack not found on disk: {', '.join(_missing_langs)}")
+_fallback_order = [k for k in _configured_langs if k in _all_langs]
+if not _fallback_order:
+    _fallback_order = list(_all_langs.keys()) or ["en"]
+_default_lang = _lang_cfg.get("default", _fallback_order[0])
+if _default_lang not in _fallback_order:
+    print(f"[WARNING] Default language '{_default_lang}' from config.yaml has no locale pack on disk; falling back to '{_fallback_order[0]}'")
+    _default_lang = _fallback_order[0]
+
 if hasattr(st, 'sidebar'):
-    _lang_cfg = config.get("languages", {})
-    _all_langs = available_languages()
-    _fallback_order = _lang_cfg.get("available", list(_all_langs.keys()))
-    _default_lang = _lang_cfg.get("default", _fallback_order[0] if _fallback_order else "en")
     _display_names = {k: _all_langs.get(k, k) for k in _fallback_order}
     lang = st.sidebar.selectbox(
         "🌐 Language",
         _fallback_order,
-        index=_fallback_order.index(_default_lang) if _default_lang in _fallback_order else 0,
+        index=_fallback_order.index(_default_lang),
         format_func=lambda l: _display_names.get(l, l),
         key="lang_select",
         on_change=clear_last_response
@@ -269,10 +279,6 @@ if hasattr(st, 'sidebar'):
         on_change=clear_last_response
     )
 else:
-    _lang_cfg = config.get("languages", {})
-    _all_langs = available_languages()
-    _fallback_order = _lang_cfg.get("available", list(_all_langs.keys()))
-    _default_lang = _lang_cfg.get("default", _fallback_order[0] if _fallback_order else "en")
     lang = _default_lang
     selected_app = application_keys[0] if application_keys else None
 set_lang(lang)

@@ -74,12 +74,23 @@ WEBAPP_TOKEN_URL=https://your-wso2-server:9443/oauth2/token
 2. Shared credentials (fallback): `WSO2_CONSUMER_KEY`, `WSO2_CONSUMER_SECRET`, `WSO2_TOKEN_URL`
 
 ### 2. Provider Configuration (`config.yaml`)
-Defines LLM providers and global settings:
+Defines LLM providers, global settings, and language options:
 
 ```yaml
 # Global configuration
 USETLS: true  # Set to false to disable SSL/TLS verification for development environments
 USER_AGENT: "WSO2-AI-Gateway-Demo/1.0"  # Custom User-Agent for all LLM API calls
+
+# Language configuration (optional)
+# default: language shown on first load
+# available: ordered list shown in sidebar; also defines prompts fallback order
+# Remove this section to show all installed locale packs with 'en' as default.
+languages:
+  default: en
+  available:
+    - en
+    - es
+    - nl
 
 providers:
   OPENLLM:
@@ -145,6 +156,7 @@ prompts:
 **Configuration Features:**
 - **USETLS**: Controls SSL/TLS certificate verification for all API connections
 - **USER_AGENT**: Global User-Agent for all API calls, with optional provider-specific overrides
+- **languages**: Controls which locales appear in the sidebar and which is selected by default; omit the section to show all installed locale packs
 - **Application isolation**: Each application can access different sets of providers
 - **OAuth flexibility**: Support for both shared and application-specific OAuth credentials
 - **Statistics tracking**: Per-application-provider success/error counters
@@ -354,9 +366,19 @@ prompts:
 - Translate both `name` (shown in the UI) and `text` (sent to the LLM)
 - Maintain the intent of each test prompt (e.g., semantic guards, PII detection)
 
-#### 4. No Code Changes Needed
+#### 4. Add the Language to `config.yaml`
 
-[localization.py](localization.py) automatically discovers the new locale directory. The language will appear in the sidebar dropdown immediately after restarting the app.
+Add the new language code to the `available` list in `config.yaml` to make it selectable in the sidebar:
+
+```yaml
+languages:
+  default: en
+  available:
+    - en
+    - fr   # add only the languages you want users to see
+```
+
+Only languages listed in `available` are shown in the UI, regardless of how many locale packs are installed. Omit the `languages` section entirely to show all installed locales.
 
 If `locales/fr/prompts.yaml` is absent, the application falls back to `locales/en/prompts.yaml`.
 
