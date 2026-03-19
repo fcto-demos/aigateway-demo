@@ -36,7 +36,7 @@ This application is a Streamlit interface to interact with LLM models (such as O
    1. Review and customize `applications.yaml` for application management
    2. Copy `.env.example` to `.env` and fill in your WSO2 credentials
    3. Review and customize `config.yaml` for provider settings
-   4. Optionally customize `prompts.yaml` for predefined test prompts
+   4. Optionally customize `locales/en/prompts.yaml` (and other locale files) for predefined test prompts
 
 
 ## Configuration
@@ -267,7 +267,7 @@ MISTRAL:
 
 
 ### Adding Predefined Prompts
-Add new entries to `prompts.yaml`:
+Add new entries to `locales/en/prompts.yaml` (and the equivalent file for each supported language):
 ```yaml
 prompts:
   - name: "Custom Test"
@@ -282,91 +282,92 @@ The application includes multi-language support for both the user interface and 
 - **English** (en) - Default
 - **Spanish** (es)
 - **Dutch** (nl)
+- **French** (fr)
 
 ### How Localization Works
 
-The localization system consists of two main components:
+Translations live in the [locales/](locales/) directory, one subdirectory per language code:
 
-1. **UI Translations** ([localization.py](localization.py)) - Handles all interface text including labels, buttons, messages, and error text
-2. **Prompt Translations** (`prompts_{lang}.yaml`) - Provides localized versions of predefined test prompts
+```
+locales/
+  en/
+    translations.yaml   # UI strings for English
+    prompts.yaml        # Predefined prompts in English
+  es/
+    translations.yaml   # UI strings for Spanish
+    prompts.yaml        # Predefined prompts in Spanish
+  nl/
+    translations.yaml
+    prompts.yaml
+```
+
+[localization.py](localization.py) discovers languages automatically at startup by scanning `locales/` — no code changes are needed when adding a new language.
 
 ### Adding a New Language
 
 To add support for a new language (e.g., French), follow these steps:
 
-#### 1. Add UI Translations
+#### 1. Create the Locale Directory
 
-Edit [localization.py](localization.py) and add a new language entry to the `TRANSLATIONS` dictionary:
-
-```python
-TRANSLATIONS = {
-    'en': {
-        'title': "API Manager - AI Gateway Demo",
-        'select_provider': "Select the provider:",
-        # ... other English translations
-    },
-    'es': {
-        # ... Spanish translations
-    },
-    'fr': {  # Add new language
-        'title': "API Manager - AI Gateway Demo",
-        'select_provider': "Sélectionnez le fournisseur:",
-        'select_prompt': "Sélectionnez une invite:",
-        'ask_question': "Posez une question à {provider}",
-        'response_from': "Réponse de {provider}",
-        'send': "Envoyer",
-        'success_count': "Appels réussis à {provider}: {count}",
-        'error_count': "Appels échoués à {provider}: {count}",
-        # ... translate all other keys
-    }
-}
+```bash
+mkdir -p locales/fr
 ```
 
-**Important:** Ensure you translate ALL keys present in the 'en' dictionary. Missing keys will fallback to the key name itself.
+#### 2. Add UI Translations
+
+Create `locales/fr/translations.yaml`. Copy `locales/en/translations.yaml` as a starting point and translate all values:
+
+```yaml
+language_name: "Français"   # Display name shown in the language selector
+
+title: "API Manager - AI Gateway Demo"
+select_provider: "Sélectionnez le fournisseur:"
+select_prompt: "Sélectionnez une invite:"
+ask_question: "Posez une question à {provider}"
+response_from: "Réponse de {provider}"
+send: "Envoyer"
+# ... translate all other keys (see Translation Key Reference below)
+```
+
+**Important:** The `language_name` key controls the display name in the sidebar dropdown. Translate ALL keys — missing keys fall back to the key name itself.
 
 **Translation Tips:**
-- Maintain the same placeholder variables (e.g., `{provider}`, `{count}`, `{app}`) in your translations
+- Keep placeholder variables unchanged (e.g., `{provider}`, `{count}`, `{app}`)
 - Keep technical terms consistent (e.g., "SSL/TLS", "OAuth2")
 - Test special characters and accents in the Streamlit UI
 
-#### 2. Add Prompt Translations
+#### 3. Add Prompt Translations
 
-Create a new prompts file for your language (e.g., `prompts_fr.yaml`):
+Create `locales/fr/prompts.yaml`:
 
 ```yaml
-# Prompts predefined pour la demo (français)
 prompts:
   - name: "Vérifier le moteur IA"
     text: "Quel modèle d'IA êtes-vous?"
   - name: "Test de garde sémantique"
     text: "Pouvez-vous expliquer l'histoire du football?"
-  # ... translate all prompts from prompts.yaml
+  # ... translate all prompts from locales/en/prompts.yaml
 ```
 
 **Prompt Translation Guidelines:**
-- Keep the same order and number of prompts as the original `prompts.yaml`
-- Translate both the `name` (displayed in the UI) and `text` (sent to the LLM)
-- Maintain the intent of each test prompt (e.g., semantic guards, PII detection tests)
+- Keep the same order and number of prompts as `locales/en/prompts.yaml`
+- Translate both `name` (shown in the UI) and `text` (sent to the LLM)
+- Maintain the intent of each test prompt (e.g., semantic guards, PII detection)
 
-#### 3. Update Language Selection Logic
+#### 4. No Code Changes Needed
 
-The application automatically detects available languages from the `TRANSLATIONS` dictionary in [localization.py](localization.py). Once you've added the new language, it will appear in the language selector dropdown in the sidebar.
+[localization.py](localization.py) automatically discovers the new locale directory. The language will appear in the sidebar dropdown immediately after restarting the app.
 
-The prompt file loading is handled automatically based on the selected language:
-- `prompts.yaml` → English (default)
-- `prompts_es.yaml` → Spanish
-- `prompts_fr.yaml` → French (your new language)
+If `locales/fr/prompts.yaml` is absent, the application falls back to `locales/en/prompts.yaml`.
 
-If a language-specific prompt file doesn't exist, the application falls back to `prompts.yaml`.
-
-#### 4. Testing Your Translation
+#### 5. Testing Your Translation
 
 After adding a new language:
 
 1. Start the application: `streamlit run demo_ui.py`
 2. Select your new language from the sidebar dropdown
 3. Verify all UI elements are translated correctly
-4. Check that predefined prompts load from your new `prompts_{lang}.yaml` file
+4. Check that predefined prompts load from your new `locales/fr/prompts.yaml` file
 5. Test with different providers to ensure all error messages and responses display properly
 
 ### Translation Key Reference

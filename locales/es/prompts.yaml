@@ -18,5 +18,3 @@ prompts:
     text: "¿Quién es el CEO de Apple?"
   - name: "Caché semántico: Prompt 2 (Open AI)"
     text: "¿Cómo se llama el director ejecutivo de Apple?"
-
-

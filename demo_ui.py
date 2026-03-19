@@ -12,7 +12,7 @@ import tiktoken
 # ------------------------------
 # Localisation import
 # ------------------------------
-from localization import t, set_lang, get_lang
+from localization import t, set_lang, get_lang, available_languages, get_prompts
 
 # ------------------------------
 # Script to call OpenAI via WSO2
@@ -248,7 +248,19 @@ if not application_keys:
 # Language selector (with fallback)
 # ------------------------------
 if hasattr(st, 'sidebar'):
-    lang = st.sidebar.selectbox("🌐 Language / Idioma / Taal", ["en", "es", "nl"], format_func=lambda l: {"en": "English", "es": "Español", "nl": "Dutch"}[l], key="lang_select", on_change=clear_last_response)
+    _lang_cfg = config.get("languages", {})
+    _all_langs = available_languages()
+    _fallback_order = _lang_cfg.get("available", list(_all_langs.keys()))
+    _default_lang = _lang_cfg.get("default", _fallback_order[0] if _fallback_order else "en")
+    _display_names = {k: _all_langs.get(k, k) for k in _fallback_order}
+    lang = st.sidebar.selectbox(
+        "🌐 Language",
+        _fallback_order,
+        index=_fallback_order.index(_default_lang) if _default_lang in _fallback_order else 0,
+        format_func=lambda l: _display_names.get(l, l),
+        key="lang_select",
+        on_change=clear_last_response
+    )
     selected_app = st.sidebar.selectbox(
         t('select_application'),
         application_keys,
@@ -257,22 +269,17 @@ if hasattr(st, 'sidebar'):
         on_change=clear_last_response
     )
 else:
-    lang = 'en'
+    _lang_cfg = config.get("languages", {})
+    _all_langs = available_languages()
+    _fallback_order = _lang_cfg.get("available", list(_all_langs.keys()))
+    _default_lang = _lang_cfg.get("default", _fallback_order[0] if _fallback_order else "en")
+    lang = _default_lang
     selected_app = application_keys[0] if application_keys else None
 set_lang(lang)
 
-# Load prompts configuration según idioma (con fallback)
-if lang == "es" and os.path.exists("prompts_es.yaml"):
-    prompts_file = "prompts_es.yaml"
-elif lang == "nl" and os.path.exists("prompts_nl.yaml"):
-    prompts_file = "prompts_nl.yaml"
-else:
-    prompts_file = "prompts.yaml"
-try:
-    with open(prompts_file, "r") as f:
-        prompts_config = yaml.safe_load(f)
-except Exception:
-    st.error("Error loading prompts configuration file")
+prompts = get_prompts(lang, fallback_order=_fallback_order)
+if not prompts:
+    st.error("Error loading prompts configuration")
     st.stop()
 
 # Get selected application configuration
@@ -615,12 +622,12 @@ answer_label = t('response_from', provider=provider)
 model = provider_config.get("MODEL", "")
 
 # Prompt selection dropdown
-prompt_options = [prompt['name'] for prompt in prompts_config['prompts']]
+prompt_options = [prompt['name'] for prompt in prompts]
 selected_prompt = st.selectbox(t('select_prompt'), prompt_options, index=0, key="prompt_select", on_change=clear_last_response)
 
 # Get the text for the selected prompt
 selected_prompt_text = ""
-for prompt in prompts_config['prompts']:
+for prompt in prompts:
     if prompt['name'] == selected_prompt:
         selected_prompt_text = prompt['text']
         break

@@ -2,6 +2,16 @@
 USETLS: true
 USER_AGENT: "WSO2-AI-Gateway-Demo/1.0"  # Custom User-Agent for all LLM API calls
 
+# Language configuration
+# default: language shown on first load
+# available: ordered list shown in sidebar; also defines prompts fallback order
+# Remove this section to show all installed locale packs with 'en' as default.
+languages:
+  default: en
+  available:
+    - fr
+    - en
+
 providers:
   OPENLLM:
     MODEL: "gpt-4o"
